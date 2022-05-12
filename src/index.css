@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -10,4 +14,34 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.bracket-line.disputed.winner {
+  @apply border-black;
+}
+
+.bracket-line.disputed:not(.winner).loser-recovered {
+  @apply border-sky-400;
+}
+
+.bracket .player {
+  @apply h-10;
+  @apply w-60;
+  @apply text-lg;
+  @apply my-2;
+}
+
+.bracket.compact .player {
+  @apply h-7;
+  @apply w-36;
+  @apply text-sm;
+  @apply my-0.5;
+}
+
+.bracket .bracket-line-container {
+  @apply w-20;
+}
+
+.bracket.compact .bracket-line-container {
+  @apply w-8;
 }
