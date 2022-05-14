@@ -4,6 +4,7 @@ import { BracketT } from './models/bracket.model';
 import Player from './Player';
 import Round from './Round';
 import { checkAllPrevPlayed, getBracketWinner } from './utils';
+import './Bracket.css';
 
 type PropsT = {
   bracket: BracketT;
@@ -30,8 +31,8 @@ function Bracket ({ bracket, setWinner }: PropsT) {
       <div className={`flex bracket
         ${compact ? 'compact' : ''}`}>
         {roundsEl}
-        <div className='flex flex-col'>
-          <Player player={winner}></Player>
+        <div className='flex items-center'>
+          <Player player={winner} won={winner !== null} lost={false}></Player>
         </div>
       </div>
     </div>

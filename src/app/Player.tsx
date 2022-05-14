@@ -3,22 +3,23 @@ import { PlayerT } from './models/player.model';
 
 type propsType = {
   player: PlayerT | null;
-  lost?: boolean;
+  lost: boolean;
+  won: boolean;
   handleClick?: MouseEventHandler;
 }
 
-function Player ({ player, lost, handleClick }: propsType) {
+function Player ({ player, lost, won, handleClick }: propsType) {
   const disabled = !handleClick;
+
   return (
-    <div className='h-full flex items-center'>
-      <button className={`player border-2 border-black flex justify-center items-center
-        ${!disabled ? 'hover:bg-sky-500 hover:border-sky-800 hover:text-white' : ''}
-        ${lost ? 'text-gray-400' : ''}`}
-        onClick={handleClick}
-        disabled={disabled}>
-        {player}
-      </button>
-    </div>
+    <button className={`player border-2
+      flex justify-center items-center
+      ${won ? 'won' : ''}
+      ${lost ? 'lost' : ''}`}
+      onClick={handleClick}
+      disabled={disabled}>
+      {player}
+    </button>
   );
 }
 

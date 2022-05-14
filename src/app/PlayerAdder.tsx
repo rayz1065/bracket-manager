@@ -29,13 +29,15 @@ function PlayerAdder ({ players, addPlayer }: PropsT) {
       <h2 className='text-lg font-semibold'>
         Add a new player
       </h2>
-      <input value={value} className='border-l border-t border-b rounded-l-lg p-2'
-        onChange={handleInputChange} placeholder='New player name...'></input>
-      <button type='submit' className={`border rounded-r-lg p-2
-        ${valid ? 'border-sky-500 hover:bg-sky-500 hover:text-white' : 'text-gray-500'}`}
-        disabled={!valid}>
-        Add player
-      </button>
+      <div className=''>
+        <input value={value} className='border-l border-t border-b rounded-l-lg p-2 bg-transparent focus-within:outline-0'
+          onChange={handleInputChange} placeholder='New player name...'></input>
+        <button type='submit' className={`border rounded-r-lg p-2
+          ${valid ? 'border-sky-500 hover:bg-sky-500 hover:text-white dark:hover:text-neutral-900' : 'text-gray-500'}`}
+          disabled={!valid}>
+          Add player
+        </button>
+      </div>
       <p>
         Players count: <b>{players.length}</b>
       </p>

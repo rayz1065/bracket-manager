@@ -1,0 +1,78 @@
+/* bracket sizing */
+
+.bracket .player {
+  @apply h-10;
+  @apply w-60;
+  @apply text-lg;
+  @apply my-2;
+}
+
+.bracket.compact .player {
+  @apply h-7;
+  @apply w-36;
+  @apply text-sm;
+  @apply my-0.5;
+}
+
+.bracket .bracket-line {
+  @apply w-20;
+}
+
+.bracket.compact .bracket-line {
+  @apply w-2;
+}
+
+/* player colors */
+
+/* default styles */
+.player {
+  @apply dark:bg-neutral-800;
+  @apply bg-neutral-50;
+  @apply dark:border-neutral-600;
+  @apply border-neutral-400;
+}
+
+/* can be disputed */
+.player:not(:disabled) {
+  @apply hover:dark:bg-sky-600;
+  @apply hover:dark:text-neutral-50;
+  @apply dark:border-neutral-200;
+  @apply hover:bg-sky-500;
+  @apply hover:text-white;
+  @apply border-black;
+}
+
+.player.won:disabled {
+  @apply dark:border-sky-500;
+  @apply border-sky-400;
+  @apply dark:bg-neutral-800;
+}
+
+.player.lost:disabled {
+  @apply dark:border-neutral-500;
+  @apply dark:text-neutral-500;
+  @apply border-neutral-400;
+  @apply text-neutral-400;
+}
+
+/* bracket line colors */
+
+.bracket-line {
+  @apply border-gray-400;
+  @apply dark:border-neutral-600;
+}
+
+.bracket-line.won {
+  @apply border-black;
+  @apply dark:border-white;
+}
+
+.bracket-line.lost.recovered {
+  @apply border-sky-400;
+  @apply dark:border-sky-800;
+}
+
+.bracket-line.lost:not(.recovered) {
+  @apply border-gray-400;
+  @apply dark:border-neutral-500
+}

@@ -1,4 +1,5 @@
 import React from 'react';
+import BracketLines from './BracketLines';
 import { MatchT } from './models/match.model';
 import Player from './Player';
 
@@ -14,7 +15,7 @@ function Match ({ match, allPrevPlayed, setWinner }: PropsT) {
     winnerIdx: null,
     loserRecovered: false
   };
-  const { players, winnerIdx, loserRecovered } = match;
+  const { players, winnerIdx } = match;
   const disputed = winnerIdx !== null;
   const playable = !disputed && allPrevPlayed;
 
@@ -23,8 +24,9 @@ function Match ({ match, allPrevPlayed, setWinner }: PropsT) {
       ? () => setWinner(playerIdx)
       : undefined;
     return (
-      <div className='h-1/2' key={playerIdx}>
+      <div className='h-1/2 flex items-center' key={playerIdx}>
         <Player player={player} lost={disputed && winnerIdx !== playerIdx}
+          won={disputed && winnerIdx === playerIdx}
           handleClick={clickHandler}
         ></Player>
       </div>
@@ -32,28 +34,11 @@ function Match ({ match, allPrevPlayed, setWinner }: PropsT) {
   });
 
   return (
-    <div className='flex flex-row flex-grow'>
+    <div className='flex flex-grow'>
       <div>
         {playersEl}
       </div>
-      {/* 2 forward lines from players */}
-      <div className='bracket-line-container'>
-        <div className='h-1/4'></div>
-        <div className={`h-1/4 border-t-2 border-r-2 bracket-line
-          ${disputed ? 'disputed' : ''}
-          ${loserRecovered ? 'loser-recovered' : ''}
-          ${winnerIdx === 0 ? 'winner' : ''}`}></div>
-        <div className={`h-1/4 border-b-2 border-r-2 bracket-line
-          ${disputed ? 'disputed' : ''}
-          ${loserRecovered ? 'loser-recovered' : ''}
-          ${winnerIdx === 1 ? 'winner' : ''}`}></div>
-        <div className='h-1/4'></div>
-      </div>
-      {/* connecting line */}
-      <div className='bracket-line-container'>
-        <div className={`h-1/2 border-b-2 bracket-line winner
-          ${disputed ? 'disputed' : ''}`}></div>
-      </div>
+      <BracketLines match={match}></BracketLines>
     </div>
   );
 }
