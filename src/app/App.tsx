@@ -17,8 +17,8 @@ function App () {
   }
 
   function setWinnerRecovery (bracketIdx: number, roundIdx: number, idx: number, winnerIdx: number) {
-    const newBracket = calculateVictory(brackets.recovery[bracketIdx], roundIdx, idx, winnerIdx);
-    const recovery: [BracketT, BracketT] = [...brackets.recovery];
+    const newBracket = calculateVictory(brackets.recovery![bracketIdx], roundIdx, idx, winnerIdx);
+    const recovery: [BracketT, BracketT] = [...brackets.recovery!];
     const main = brackets.main;
     recovery[bracketIdx] = newBracket;
     setBrackets({ recovery, main });
@@ -28,6 +28,22 @@ function App () {
     const newPlayers = [...players, player];
     setPlayers(newPlayers);
     setBrackets(generateBrackets(newPlayers));
+  }
+
+  function getRecovery (bracketIdx: number) {
+    if (brackets.recovery === null) {
+      return <div>No recovery bracket {bracketIdx}</div>;
+    }
+    return (
+      <>
+        <h1 className='text-lg font-semibold mt-3'>
+          Recovery {bracketIdx + 1}
+        </h1>
+        <Bracket bracket={brackets.recovery[bracketIdx]}
+          setWinner={(roundIdx, idx, winnerIdx) => setWinnerRecovery(bracketIdx, roundIdx, idx, winnerIdx)}
+        ></Bracket>
+      </>
+    );
   }
 
   return (
@@ -52,19 +68,8 @@ function App () {
           setWinner={setWinnerMain}
         ></Bracket>
 
-        <h1 className='text-lg font-semibold mt-3'>
-          Recovery 1
-        </h1>
-        <Bracket bracket={brackets.recovery[0]}
-          setWinner={(roundIdx, idx, winnerIdx) => setWinnerRecovery(0, roundIdx, idx, winnerIdx)}
-        ></Bracket>
-
-        <h1 className='text-lg font-semibold mt-3'>
-          Recovery 2
-        </h1>
-        <Bracket bracket={brackets.recovery[1]}
-          setWinner={(roundIdx, idx, winnerIdx) => setWinnerRecovery(1, roundIdx, idx, winnerIdx)}
-        ></Bracket>
+        {getRecovery(0)}
+        {getRecovery(1)}
       </div>
     </div>
   );

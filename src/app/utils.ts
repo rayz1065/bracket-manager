@@ -5,6 +5,15 @@ import { BracketsT } from './models/brackets.model';
 import { MatchT } from './models/match.model';
 import { PlayerT } from './models/player.model';
 
+const recoveryBracketIdentifiers = ['A', 'B', 'C', 'D'] as const;
+type RecoveryBracketIdentifierT = 'A' | 'B' | 'C' | 'D';
+interface RecoveryBracketLocation {
+  recoveryBracketIdx: number;
+  roundIdx: number;
+  idx: number;
+  playerIdx: number;
+}
+
 export function getDefaultPlayers (): PlayerT[] {
   return [
     'Mario rossi',
@@ -19,15 +28,6 @@ export function getDefaultPlayers (): PlayerT[] {
 }
 
 // math functions
-
-const recoveryBracketIdentifiers = ['A', 'B', 'C', 'D'] as const;
-type RecoveryBracketIdentifierT = 'A' | 'B' | 'C' | 'D';
-interface RecoveryBracketLocation {
-  recoveryBracketIdx: number;
-  roundIdx: number;
-  idx: number;
-  playerIdx: number;
-}
 
 function isQuarterFinals (roundIdx: number, roundsCount: number): boolean {
   return roundsCount - roundIdx === 3;
@@ -71,6 +71,8 @@ export function getRecoveryBracketRoundsCount (roundsCount: number): number {
   return roundsCount - 1;
 }
 
+// bracket functions
+
 /**
  * gets the recovery bracket for an identifier
  * note: opposite bracket for semi finalists
@@ -85,8 +87,6 @@ export function getRecoveryBracketIdx (
   }
   return usesTopBracket ? 0 : 1;
 }
-
-// bracket functions
 
 /**
  * returns the recovery bracket identifier (A, B, C, D)
@@ -122,6 +122,7 @@ export function getRecoveryBracketLocation (
   if (isFinals(roundIdx, roundsCount)) {
     throw new Error('Finalists cannot be recovered');
   }
+
   const recoveryRoundsCount = getRecoveryBracketRoundsCount(roundsCount);
   const identifier = getRecoveryBracketIdentifier(
     roundIdx, roundsCount, idx, 0
@@ -134,7 +135,7 @@ export function getRecoveryBracketLocation (
     return {
       recoveryBracketIdx,
       roundIdx: recoveryRoundsCount - 1, // finals 3-5
-      idx: 0, // final round
+      idx: 0, // final match
       playerIdx: 1 // second player
     };
   }
@@ -142,22 +143,39 @@ export function getRecoveryBracketLocation (
   // based on the target round and the branch being used
   const recoveryRoundIdx = Math.max(roundIdx - 1, 0);
   const usesSecondaryBranch = ['B', 'D'].includes(identifier);
-  const recoveryIdx = usesSecondaryBranch && roundsCount !== 3
+
+  if (roundsCount === 3) {
+    // if the bracket is too small the rules change slightly
+    return {
+      recoveryBracketIdx,
+      roundIdx: recoveryRoundIdx,
+      idx: 0,
+      playerIdx: usesSecondaryBranch ? 1 : 0
+    };
+  }
+
+  // the main branch is always 0, the secondary branch uses powers of two
+  const recoveryIdx = usesSecondaryBranch
     ? Math.pow(2, recoveryRoundsCount - recoveryRoundIdx - 3)
     : 0;
-  // first round initializes player with playerIdx 0
-  let recoveryPlayerIdx = (roundIdx === 0) ? 0 : 1;
-  if (roundsCount === 3) {
-    recoveryPlayerIdx = usesSecondaryBranch ? 1 : 0;
-  }
   return {
     recoveryBracketIdx,
     roundIdx: recoveryRoundIdx,
     idx: recoveryIdx,
-    playerIdx: recoveryPlayerIdx
+    // first round initializes player with playerIdx 0, otherwise always 1
+    playerIdx: (roundIdx === 0) ? 0 : 1,
   };
 }
 
+/**
+ * generates a bracket full of null values based on the number of rounds
+ * e.g. with 3 rounds
+ * [
+ *  [null, null, null, null],
+ *  [null, null],
+ *  [null],
+ * ]
+ */
 function generateEmptyBracket (roundsCount: number): BracketT {
   const bracket: BracketT = [];
   // create the required rounds, each with the required matches
@@ -194,9 +212,21 @@ export function generateMainBracket (players: PlayerT[]): BracketT {
   return bracket;
 }
 
+/**
+ * generates the main and the recovery brackets
+ */
 export function generateBrackets (players: PlayerT[]): BracketsT {
   const main = generateMainBracket(players);
-  const recoveryRoundsCount = getRecoveryBracketRoundsCount(main.length);
+  let recoveryRoundsCount = 0;
+  try {
+    recoveryRoundsCount = getRecoveryBracketRoundsCount(main.length);
+  } catch (error) {
+    // no recovery brackets can be created
+    return {
+      main,
+      recovery: null
+    };
+  }
   return {
     main,
     recovery: [
@@ -206,6 +236,9 @@ export function generateBrackets (players: PlayerT[]): BracketsT {
   };
 }
 
+/**
+ * checks if a match has no previous match that led to its creation
+ */
 export function noPrevMatch (bracket: BracketT, roundIdx: number, idx: number): boolean {
   const ff: [number, number][] = [[roundIdx, idx]];
   const begRoundIdx = roundIdx;
@@ -240,10 +273,11 @@ export function checkAllPrevPlayed (bracket: BracketT, roundIdx: number, idx: nu
   while ((curr = ff.pop())) {
     const [roundIdx, idx] = curr;
     const match = bracket[roundIdx][idx];
-    // other than the first round, previous must be played
+    // if the match is the root of a null tree it can be ignored
     if (!match && noPrevMatch(bracket, roundIdx, idx)) {
       continue;
     }
+    // other than the first round, previous must be played
     if (roundIdx !== begRoundIdx && (!match || match.winnerIdx === null)) {
       return false;
     }
@@ -284,18 +318,9 @@ export function calculateVictory (bracket: BracketT, roundIdx: number, idx: numb
   // update the next match
   if (roundIdx + 1 < newBracket.length) {
     const nextMatchIdx = getNextMatchIdx(idx);
-    const nextMatch: MatchT = newBracket[roundIdx + 1][nextMatchIdx] ?? {
-      players: [null, null],
-      winnerIdx: null,
-      loserRecovered: false
-    };
-    const newPlayers = [...nextMatch.players];
-    newPlayers[idx % 2] = winner;
+    const nextMatch: MatchT = setMatchPlayer(newBracket[roundIdx + 1][nextMatchIdx], winner, idx % 2);
     newBracket[roundIdx + 1] = [...newBracket[roundIdx + 1]];
-    newBracket[roundIdx + 1][nextMatchIdx] = {
-      ...nextMatch,
-      players: newPlayers
-    };
+    newBracket[roundIdx + 1][nextMatchIdx] = nextMatch;
   }
 
   return newBracket;
@@ -304,16 +329,45 @@ export function calculateVictory (bracket: BracketT, roundIdx: number, idx: numb
 export function calculateMainVictory (brackets: BracketsT, roundIdx: number, idx: number, winnerIdx: number): BracketsT {
   brackets = { ...brackets };
   brackets.main = calculateVictory(brackets.main, roundIdx, idx, winnerIdx);
+  if (brackets.recovery === null) {
+    // no recovery brackets
+    return brackets;
+  }
   return recoverLosers(brackets, roundIdx, idx);
 }
 
+/**
+ * updates the match to contain a player at the specified index
+ */
+function setMatchPlayer (match: MatchT | null, player: PlayerT, playerIdx: number): MatchT {
+  match = match ?? {
+    players: [null, null],
+    loserRecovered: false,
+    winnerIdx: null,
+  };
+  const newPlayers = [...match.players];
+  if (newPlayers[playerIdx] !== null) {
+    throw Error('Rewriting player in match');
+  }
+  newPlayers[playerIdx] = player;
+  return { ...match, players: newPlayers };
+}
+
+/**
+ * recovers the losers from the main bracket to the recovery brackets:
+ * - whoever lost against the winner of quarter finals is recovered
+ * - the loser from semifinals is recovered
+ */
 export function recoverLosers (brackets: BracketsT, roundIdx: number, idx: number): BracketsT {
   // if the player reached the quarter finals, recover the losers
+  if (brackets.recovery === null) {
+    throw new Error('Cannot recover losers if recovery brackets are missing');
+  }
   const newBrackets = { ...brackets };
   newBrackets.main = [...newBrackets.main];
   newBrackets.recovery = [
-    [...newBrackets.recovery[0]],
-    [...newBrackets.recovery[1]],
+    [...brackets.recovery[0]],
+    [...brackets.recovery[1]],
   ];
   const mainBracket = newBrackets.main;
   const recoveryBrackets = newBrackets.recovery;
@@ -325,6 +379,9 @@ export function recoverLosers (brackets: BracketsT, roundIdx: number, idx: numbe
       if (match === null) {
         throw Error('Found unset match while propagating recovered status');
       }
+      if (match.winnerIdx === null) {
+        throw Error('Found match with unset winner while propagating recovered status');
+      }
       mainBracket[roundIdx] = [...mainBracket[roundIdx]];
       mainBracket[roundIdx][idx] = {
         ...match,
@@ -332,22 +389,18 @@ export function recoverLosers (brackets: BracketsT, roundIdx: number, idx: numbe
       };
 
       // find the location for the recovered player
-      const recLoc = getRecoveryBracketLocation(roundIdx, mainBracket.length, idx);
-      recoveryBrackets[recLoc.recoveryBracketIdx] = [...recoveryBrackets[recLoc.recoveryBracketIdx]];
-      recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx] =
-        [...recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx]];
-      const nextMatch: MatchT = recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] ?? {
-        players: [null, null],
-        loserRecovered: false,
-        winnerIdx: null,
-      };
-      const newPlayers = [...nextMatch.players];
-      if (newPlayers[recLoc.playerIdx] !== null) {
-        throw Error('Rewriting recovery bracket player');
+      const loser = match.players[1 - match.winnerIdx];
+      if (loser !== null) {
+        const recLoc = getRecoveryBracketLocation(roundIdx, mainBracket.length, idx);
+        recoveryBrackets[recLoc.recoveryBracketIdx] = [...recoveryBrackets[recLoc.recoveryBracketIdx]];
+        recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx] =
+          [...recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx]];
+        const nextMatch: MatchT = setMatchPlayer(
+          recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx],
+          loser, recLoc.playerIdx
+        );
+        recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] = nextMatch;
       }
-      newPlayers[recLoc.playerIdx] = match.players[1 - match.winnerIdx!];
-      recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] = nextMatch;
-      nextMatch.players = newPlayers;
 
       roundIdx -= 1;
       idx = getPrevMatchIdx(idx, match.winnerIdx!);
@@ -362,23 +415,23 @@ export function recoverLosers (brackets: BracketsT, roundIdx: number, idx: numbe
       ...match,
       loserRecovered: true
     };
-
-    const recLoc = getRecoveryBracketLocation(roundIdx, mainBracket.length, idx);
-    recoveryBrackets[recLoc.recoveryBracketIdx] = [...recoveryBrackets[recLoc.recoveryBracketIdx]];
-    recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx] =
-      [...recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx]];
-    const nextMatch: MatchT = recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] ?? {
-      players: [null, null],
-      loserRecovered: false,
-      winnerIdx: null,
-    };
-    const newPlayers = [...nextMatch.players];
-    if (newPlayers[recLoc.playerIdx] !== null) {
-      throw Error('Rewriting recovery bracket player');
+    if (match.winnerIdx === null) {
+      throw Error('Found match with unset winner while recovering loser');
     }
-    newPlayers[recLoc.playerIdx] = match.players[1 - match.winnerIdx!];
-    recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] = nextMatch;
-    nextMatch.players = newPlayers;
+
+    const loser = match.players[1 - match.winnerIdx!];
+    if (loser !== null) {
+      const recLoc = getRecoveryBracketLocation(roundIdx, mainBracket.length, idx);
+      recoveryBrackets[recLoc.recoveryBracketIdx] = [...recoveryBrackets[recLoc.recoveryBracketIdx]];
+      recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx] =
+        [...recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx]];
+      const nextMatch: MatchT = setMatchPlayer(
+        recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx],
+        loser,
+        recLoc.playerIdx
+      );
+      recoveryBrackets[recLoc.recoveryBracketIdx][recLoc.roundIdx][recLoc.idx] = nextMatch;
+    }
     return newBrackets;
   }
   return brackets;

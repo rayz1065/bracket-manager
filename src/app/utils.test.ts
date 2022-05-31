@@ -306,20 +306,20 @@ test('finds the correct location in recovery bracket', () => {
 test('correctly identifies and sets recovered players', () => {
   const brackets = generateBrackets(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
   let newBrackets = calculateMainVictory(brackets, 0, 0, 0); // 'A' wins
-  expect(newBrackets.recovery[0][0][0]).toEqual({
+  expect(newBrackets.recovery![0][0][0]).toEqual({
     players: ['E', null],
     loserRecovered: false,
     winnerIdx: null
   });
   expect(newBrackets.main[0][0]!.loserRecovered).toBeTruthy();
   newBrackets = calculateMainVictory(newBrackets, 0, 1, 0); // 'B' wins
-  expect(newBrackets.recovery[0][0][0]).toEqual({
+  expect(newBrackets.recovery![0][0][0]).toEqual({
     players: ['E', 'F'],
     loserRecovered: false,
     winnerIdx: null
   });
   newBrackets = calculateMainVictory(newBrackets, 1, 0, 0); // 'A' wins
-  expect(newBrackets.recovery[1][1][0]).toEqual({
+  expect(newBrackets.recovery![1][1][0]).toEqual({
     players: [null, 'B'],
     loserRecovered: false,
     winnerIdx: null

@@ -8,14 +8,11 @@ type PropsT = {
 function BracketCompactToggle ({ compact, setCompact }: PropsT) {
   return (
     <div>
-      <input type='checkbox'
-        className='accent-sky-500'
-        id='compact-checkbox'
-        checked={compact}
-        onChange={(event) => setCompact(event.target.checked)}>
-      </input>
-      <label htmlFor='compact-checkbox' className='ml-1'>
-        Use compact visual
+      <label className="flex items-center w-fit">
+        <input type="checkbox" className="accent-sky-500"
+          checked={compact}
+          onChange={() => setCompact(!compact)}></input>
+        <span className="ml-2">Use compact visual</span>
       </label>
     </div>
   );
