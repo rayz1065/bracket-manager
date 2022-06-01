@@ -105,9 +105,9 @@ test('correctly calculates a victory', () => {
 });
 
 test('throws error on invalid match selection', () => {
-  const bracket = generateMainBracket(['A', 'B', 'C', 'D', 'E']);
+  const bracket = generateMainBracket(['A', 'B', 'C', 'D', 'E', 'F']);
   expect(() => calculateVictory(bracket, 1, 0, 0)).toThrowError(); // no match
-  expect(() => calculateVictory(bracket, 0, 1, 1)).toThrowError(); // empty player
+  expect(() => calculateVictory(bracket, 0, 2, 1)).toThrowError(); // empty player
 
   const newBracket = calculateVictory(bracket, 0, 0, 0);
   expect(() => calculateVictory(newBracket, 0, 0, 1)).toThrowError(); // repeating match

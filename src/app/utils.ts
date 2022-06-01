@@ -191,6 +191,21 @@ function generateEmptyBracket (roundsCount: number): BracketT {
 }
 
 /**
+ * initial victories need to be assigned to avoid having matches
+ * with a single player
+ *
+ * warning: only use in initial bracket creation
+ */
+function assignInitialVictories (mainBracket: BracketT): BracketT {
+  for (let matchIdx = 0; matchIdx < mainBracket[0].length; matchIdx++) {
+    if (mainBracket[0][matchIdx]!.players[1] === null) {
+      mainBracket = calculateVictory(mainBracket, 0, matchIdx, 0);
+    }
+  }
+  return mainBracket;
+}
+
+/**
  * generates a bracket from the players with at least 1 round
  */
 export function generateMainBracket (players: PlayerT[]): BracketT {
@@ -209,7 +224,10 @@ export function generateMainBracket (players: PlayerT[]): BracketT {
     };
   }
 
-  return bracket;
+  if (players.length === 0) {
+    return bracket;
+  }
+  return assignInitialVictories(bracket);
 }
 
 /**
